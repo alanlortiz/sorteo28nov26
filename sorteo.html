@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo de Suéteres</title>
+    <!-- Importamos CryptoJS para descifrar en el cliente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #0b2818; color: white; text-align: center; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        .container { background-color: #c71f37; padding: 30px; border-radius: 15px; box-shadow: 0px 10px 20px rgba(0,0,0,0.5); max-width: 400px; width: 85%; }
+        input { padding: 12px; width: 80%; border-radius: 8px; border: none; font-size: 16px; margin-bottom: 15px; text-align: center; text-transform: uppercase; }
+        button { background-color: #f7d02c; color: #0b2818; border: none; padding: 12px 24px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 85%; margin-top: 10px; transition: 0.3s; }
+        button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+        #ruleta-container { display: none; }
+        .ruleta-box { font-size: 32px; font-weight: bold; background: white; color: #c71f37; padding: 20px; border-radius: 10px; margin: 20px 0; min-height: 40px; }
+        #resultado { display: none; font-size: 22px; font-weight: bold; margin-top: 15px; }
+        .snow { font-size: 40px; margin-bottom: -10px; }
+    </style>
+</head>
+<body>
+    <div class="container" id="login-view">
+        <div class="snow">❄️🎄❄️</div>
+        <h1>Intercambio de Suéteres</h1>
+        <p>Ingresa tu nombre y tu Token de acceso.</p>
+        <input type="text" id="nombre_input" placeholder="Tu alias..." autocomplete="off">
+        <input type="text" id="pin_input" placeholder="TOKEN (Ej. A1B2C)">
+        <br><button id="btn-girar" onclick="iniciarRuleta()">Girar Ruleta</button>
+        <p id="error-msg" style="color: #ffcccc; display: none; margin-top: 10px; font-size: 14px; font-weight: bold;"></p>
+    </div>
+
+    <div class="container" id="ruleta-container">
+        <h1>Buscando tu Suéter Secreto...</h1>
+        <div class="ruleta-box" id="ruleta-texto">???</div>
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        const dbSecreta = {"isaac": "Tx8CLBtDHhbRX4Ab+PbXmw==", "issac": "Tx8CLBtDHhbRX4Ab+PbXmw==", "isac": "Tx8CLBtDHhbRX4Ab+PbXmw==", "isaak": "Tx8CLBtDHhbRX4Ab+PbXmw==", "karen": "8f4weSWx/sAuikij/ZsCqQ==", "kia": "8f4weSWx/sAuikij/ZsCqQ==", "ivonne": "8f4weSWx/sAuikij/ZsCqQ==", "ivone": "8f4weSWx/sAuikij/ZsCqQ==", "yvonne": "8f4weSWx/sAuikij/ZsCqQ==", "karen ivonne": "8f4weSWx/sAuikij/ZsCqQ==", "alan mendez": "6nQnNPaIA+qNNIUW0AhC8w==", "alan m\u00e9ndez": "6nQnNPaIA+qNNIUW0AhC8w==", "mendez": "6nQnNPaIA+qNNIUW0AhC8w==", "m\u00e9ndez": "6nQnNPaIA+qNNIUW0AhC8w==", "alan m": "6nQnNPaIA+qNNIUW0AhC8w==", "luisa": "27MvzS8GApd5LEpAxt0U/g==", "lu": "27MvzS8GApd5LEpAxt0U/g==", "lulu": "27MvzS8GApd5LEpAxt0U/g==", "lul\u00fa": "27MvzS8GApd5LEpAxt0U/g==", "maria luisa": "27MvzS8GApd5LEpAxt0U/g==", "mar\u00eda luisa": "27MvzS8GApd5LEpAxt0U/g==", "val": "tsfX7hkATnQO7UfdkfPryA==", "valeria": "tsfX7hkATnQO7UfdkfPryA==", "valentina": "tsfX7hkATnQO7UfdkfPryA==", "vale": "tsfX7hkATnQO7UfdkfPryA==", "roy": "ab7PWeaMjTS4GveY4cbDIg==", "rodrigo": "ab7PWeaMjTS4GveY4cbDIg==", "roi": "ab7PWeaMjTS4GveY4cbDIg==", "royer": "ab7PWeaMjTS4GveY4cbDIg==", "val baez": "jlZFGQ5ta/Mwj6LjrZJDJg==", "val b\u00e1ez": "jlZFGQ5ta/Mwj6LjrZJDJg==", "valeria baez": "jlZFGQ5ta/Mwj6LjrZJDJg==", "valeria b\u00e1ez": "jlZFGQ5ta/Mwj6LjrZJDJg==", "vale baez": "jlZFGQ5ta/Mwj6LjrZJDJg==", "vale b\u00e1ez": "jlZFGQ5ta/Mwj6LjrZJDJg==", "baez": "jlZFGQ5ta/Mwj6LjrZJDJg==", "b\u00e1ez": "jlZFGQ5ta/Mwj6LjrZJDJg==", "val b": "jlZFGQ5ta/Mwj6LjrZJDJg==", "alan": "1okrVtzuilQw95FvRo4Kzg==", "allan": "1okrVtzuilQw95FvRo4Kzg==", "alan lopez": "1okrVtzuilQw95FvRo4Kzg==", "alan l\u00f3pez": "1okrVtzuilQw95FvRo4Kzg==", "lopez": "1okrVtzuilQw95FvRo4Kzg==", "l\u00f3pez": "1okrVtzuilQw95FvRo4Kzg==", "alexei": "w9RA8qWU1a1mbD6cm9sqvg==", "alexey": "w9RA8qWU1a1mbD6cm9sqvg==", "alex": "w9RA8qWU1a1mbD6cm9sqvg==", "aleks": "w9RA8qWU1a1mbD6cm9sqvg==", "aleksei": "w9RA8qWU1a1mbD6cm9sqvg==", "fernanda": "ha66g9UJmrIeKggSSh7FOw==", "fer": "ha66g9UJmrIeKggSSh7FOw==", "fercha": "ha66g9UJmrIeKggSSh7FOw==", "nanda": "ha66g9UJmrIeKggSSh7FOw==", "mafer": "ha66g9UJmrIeKggSSh7FOw==", "maria fernanda": "ha66g9UJmrIeKggSSh7FOw==", "mar\u00eda fernanda": "ha66g9UJmrIeKggSSh7FOw==", "sara": "SRcNJ+u5B8C317kKrn++Iw==", "sarah": "SRcNJ+u5B8C317kKrn++Iw==", "sarita": "SRcNJ+u5B8C317kKrn++Iw==", "sari": "SRcNJ+u5B8C317kKrn++Iw==", "sary": "SRcNJ+u5B8C317kKrn++Iw==", "saul": "yTm41MASX0OKmjfjG7av6Q==", "sa\u00fal": "yTm41MASX0OKmjfjG7av6Q==", "saulito": "yTm41MASX0OKmjfjG7av6Q==", "bruno": "I+fVcHqwo4op9z1pMesjqA==", "brunito": "I+fVcHqwo4op9z1pMesjqA==", "axel": "2PEDN2xdO4kQFoC04uRu6w==", "aksel": "2PEDN2xdO4kQFoC04uRu6w==", "axl": "2PEDN2xdO4kQFoC04uRu6w==", "deimos": "HAcXPM1CG7I1HS1TfbM07g==", "deymos": "HAcXPM1CG7I1HS1TfbM07g==", "demos": "HAcXPM1CG7I1HS1TfbM07g==", "deimo": "HAcXPM1CG7I1HS1TfbM07g==", "diego": "EK7qX7YVgTo4+/+ATJ16tQ==", "dieguito": "EK7qX7YVgTo4+/+ATJ16tQ==", "dyego": "EK7qX7YVgTo4+/+ATJ16tQ=="};
+        const todosLosNombres = ["Isaac", "Karen", "Alan Mendez", "Luisa", "Val", "Roy", "Val Baez", "Alan", "Alexei", "Fernanda", "Sara", "Saul", "Bruno", "Axel", "Deimos", "Diego"];
+        
+        // Bloqueo Anti-Fuerza Bruta
+        let intentosFallidos = parseInt(localStorage.getItem('intentosNavidad')) || 0;
+        const btnGirar = document.getElementById('btn-girar');
+        const errorMsg = document.getElementById('error-msg');
+
+        function verificarBloqueo() {
+            if (intentosFallidos >= 3) {
+                btnGirar.disabled = true;
+                errorMsg.style.display = 'block';
+                errorMsg.innerText = "Demasiados intentos fallidos. Sistema bloqueado por seguridad 🕵️‍♂️";
+                return true;
+            }
+            return false;
+        }
+        verificarBloqueo();
+
+        function iniciarRuleta() {
+            if (verificarBloqueo()) return;
+
+            const inputVal = document.getElementById('nombre_input').value.trim().toLowerCase();
+            const inputToken = document.getElementById('pin_input').value.trim().toUpperCase();
+
+            if (!inputVal || !inputToken) {
+                mostrarError("Ingresa todos los datos.");
+                return;
+            }
+
+            if (!dbSecreta[inputVal]) {
+                registrarFallo("Usuario no encontrado.");
+                return;
+            }
+
+            // Proceso de descifrado criptográfico (Zero-Knowledge)
+            try {
+                const encryptedBase64 = dbSecreta[inputVal];
+                const key = CryptoJS.SHA256(inputToken);
+                const iv = CryptoJS.enc.Utf8.parse('16bytes_fixed_iv');
+
+                const decrypted = CryptoJS.AES.decrypt(encryptedBase64, key, {
+                    iv: iv,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+
+                const objetivoReal = decrypted.toString(CryptoJS.enc.Utf8);
+
+                if (!objetivoReal) throw new Error("Mal padding");
+
+                // Si llegamos aquí, el descifrado fue exitoso
+                localStorage.removeItem('intentosNavidad'); // Reiniciar contador de intentos
+                ejecutarAnimacion(objetivoReal);
+
+            } catch (e) {
+                // Si la llave (token) es incorrecta, AES fallará silenciosamente o lanzará error de padding
+                registrarFallo("Token inválido o incorrecto.");
+            }
+        }
+
+        function registrarFallo(mensaje) {
+            intentosFallidos++;
+            localStorage.setItem('intentosNavidad', intentosFallidos);
+            mostrarError(mensaje + ` (Intento ${intentosFallidos}/3)`);
+            verificarBloqueo();
+        }
+
+        function mostrarError(msg) {
+            errorMsg.style.display = 'block';
+            errorMsg.innerText = msg;
+        }
+
+        function ejecutarAnimacion(objetivoReal) {
+            document.getElementById('login-view').style.display = 'none';
+            document.getElementById('ruleta-container').style.display = 'block';
+            const ruletaTexto = document.getElementById('ruleta-texto');
+
+            let iteraciones = 0;
+            const maxIteraciones = 40; 
+            const intervaloBase = 40;  
+            
+            function girar() {
+                ruletaTexto.innerText = todosLosNombres[Math.floor(Math.random() * todosLosNombres.length)];
+                iteraciones++;
+
+                if (iteraciones < maxIteraciones) {
+                    setTimeout(girar, intervaloBase + (iteraciones * 4)); 
+                } else {
+                    ruletaTexto.innerText = objetivoReal;
+                    ruletaTexto.style.backgroundColor = "#f7d02c";
+                    ruletaTexto.style.color = "#0b2818";
+                    const res = document.getElementById('resultado');
+                    res.innerHTML = `¡Te toca regalarle a<br><span style="font-size: 30px;">${objetivoReal}</span>! 🎅👕`;
+                    res.style.display = 'block';
+                }
+            }
+            girar();
+        }
+    </script>
+</body>
+</html>
